@@ -4,6 +4,7 @@ import com.codestates.exception.BusinessLogicException;
 import com.codestates.response.ErrorMapper;
 import com.codestates.response.ErrorResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -16,6 +17,7 @@ import java.util.List;
 
 @RestControllerAdvice
 @RequiredArgsConstructor
+@Slf4j
 public class GlobalExceptionAdvice {
     private final ErrorMapper mapper;
     @ExceptionHandler
@@ -48,7 +50,7 @@ public class GlobalExceptionAdvice {
 
     @ExceptionHandler
     public ResponseEntity<ErrorResponse> handleException(Exception e) {
-        System.out.println(e.toString());
+        log.error("# handle exception", e);
         HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
         ErrorResponse response = ErrorResponse.of(status);
         return new ResponseEntity<>(response, status);
