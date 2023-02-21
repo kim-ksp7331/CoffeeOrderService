@@ -2,10 +2,12 @@ package com.codestates.response;
 
 import com.codestates.exception.BusinessLogicException;
 import com.codestates.exception.ExceptionCode;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindingResult;
 
 import javax.validation.ConstraintViolation;
@@ -18,7 +20,9 @@ import java.util.stream.Collectors;
 public class ErrorResponse {
     private int status;
     private String message;
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private List<FieldError> fieldErrors;
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private List<ConstraintViolationError> violationErrors;
 
     public static ErrorResponse of(BindingResult bindingResult) {
@@ -46,6 +50,11 @@ public class ErrorResponse {
     public static ErrorResponse of(BusinessLogicException exception) {
         ExceptionCode exceptionCode = exception.getExceptionCode();
         return new ErrorResponse(exceptionCode.getStatus(), exception.getMessage(), null, null);
+    }
+
+    public static ErrorResponse of(HttpMessageNotReadableException exception) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+        return new ErrorResponse(status.value(), "Request Format Not Valid", null, null);
     }
 
     public static ErrorResponse of(HttpStatus status) {

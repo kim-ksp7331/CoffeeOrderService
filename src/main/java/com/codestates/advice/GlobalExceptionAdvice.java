@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -35,17 +36,24 @@ public class GlobalExceptionAdvice {
     }
 
     @ExceptionHandler
-    public ResponseEntity<ErrorResponse> handleBusinessLogicException(BusinessLogicException e) {
-        ErrorResponse response = ErrorResponse.of(e);
-        return new ResponseEntity<>(response, HttpStatus.valueOf(response.getStatus()));
-    }
-
-    @ExceptionHandler
     public ResponseEntity<ErrorResponse> handleHttpRequestMethodNotSupportedException(
             HttpRequestMethodNotSupportedException e) {
         HttpStatus status = HttpStatus.METHOD_NOT_ALLOWED;
         ErrorResponse response = ErrorResponse.of(status);
         return new ResponseEntity<>(response, status);
+    }
+
+    @ExceptionHandler
+    public ResponseEntity<ErrorResponse> handleHttpMessageNotReadableException(
+            HttpMessageNotReadableException e) {
+        ErrorResponse response = ErrorResponse.of(e);
+        return new ResponseEntity<>(response, HttpStatus.valueOf(response.getStatus()));
+    }
+
+    @ExceptionHandler
+    public ResponseEntity<ErrorResponse> handleBusinessLogicException(BusinessLogicException e) {
+        ErrorResponse response = ErrorResponse.of(e);
+        return new ResponseEntity<>(response, HttpStatus.valueOf(response.getStatus()));
     }
 
     @ExceptionHandler

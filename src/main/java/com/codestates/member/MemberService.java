@@ -2,47 +2,56 @@ package com.codestates.member;
 
 import com.codestates.exception.BusinessLogicException;
 import com.codestates.exception.ExceptionCode;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class MemberService {
+    private final MemberRepository memberRepository;
     public Member createMember(Member member) {
-        // TODO should business logic
-        Member createdMember = member;
-        System.out.println("MemberService.createMember");
-        return createdMember;
+        // 이미 등록된 이메일인지 검증, 이미 등록되었다면 등록이 불가하므로 예외 발생
+        verifyExistsEmail(member.getEmail());
+
+        return memberRepository.save(member);
     }
 
     public Member updateMember(Member member) {
-        // TODO should business logic
-        Member updatedMember = member;
-        System.out.println("MemberService.updateMember");
-        return updatedMember;
+        Member findMember = findVerifiedMember(member.getMemberId());
+        Optional.ofNullable(member.getName()).ifPresent(name -> findMember.setName(name));
+        Optional.ofNullable(member.getPhone()).ifPresent(phone -> findMember.setPhone(phone));
+        return memberRepository.save(findMember);
     }
 
     public Member findMember(long memberId) {
-        // TODO should business logic
-        if(memberId == 2) throw new BusinessLogicException(ExceptionCode.MEMBER_NOT_FOUND);
-        Member member = new Member(memberId, "hgd@gmail.com", "홍길동", "010-1234-5678");
-        System.out.println("MemberService.findMember");
-        return member;
+        return findVerifiedMember(memberId);
     }
 
     public List<Member> findMembers() {
-        // TODO should business logic
-        System.out.println("MemberService.findMembers");
-        List<Member> members = List.of(
-                new Member(1, "hgd@gmail.com", "홍길동", "010-1234-5678"),
-                new Member(2, "lml@gmail.com", "이몽룡", "010-1111-2222")
-        );
-        return members;
+        return (List<Member>) memberRepository.findAll();
     }
 
     public void deleteMember(long memberId) {
-        // TODO should business logic
-        System.out.println("MemberService.deleteMember");
+        Member findMember = findVerifiedMember(memberId);
+        memberRepository.delete(findMember);
     }
 
+    // 이미 존재하는 회원인지를 검증
+    public Member findVerifiedMember(long memberId) {
+        Optional<Member> optionalMember = memberRepository.findById(memberId);
+        Member findMember = optionalMember.orElseThrow(() -> new BusinessLogicException(ExceptionCode.MEMBER_NOT_FOUND));
+        return findMember;
+    }
+
+    // 이미 등록된 이메일 주소인지 검증
+    private void verifyExistsEmail(String email) {
+        Optional<Member> member = memberRepository.findByEmail(email);
+        if (member.isPresent()) {
+            throw new BusinessLogicException(ExceptionCode.MEMBER_EXISTS);
+        }
+    }
 }

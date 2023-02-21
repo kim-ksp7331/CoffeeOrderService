@@ -1,35 +1,64 @@
 package com.codestates.coffee;
 
+import com.codestates.exception.BusinessLogicException;
+import com.codestates.exception.ExceptionCode;
+import com.codestates.order.entity.Order;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class CoffeeService {
+    private final CoffeeRepository coffeeRepository;
     public Coffee createCoffee(Coffee coffee) {
-        System.out.println("CoffeeService.createCoffee");
-        return coffee;
+        String coffeeCode = coffee.getCoffeeCode().toUpperCase();
+        // 이미 등록된 커피코드이면 예외 발생
+        verifyExistCoffee(coffeeCode);
+        coffee.setCoffeeCode(coffeeCode);
+
+        return coffeeRepository.save(coffee);
     }
 
     public Coffee updateCoffee(Coffee coffee) {
-        System.out.println("CoffeeService.updateCoffee");
-        return coffee;
+        Coffee findCoffee = findVerifiedCoffee(coffee.getCoffeeId());
+        Optional.ofNullable(coffee.getKorName()).ifPresent(korName -> findCoffee.setKorName(korName));
+        Optional.ofNullable(coffee.getEngName()).ifPresent(engName -> findCoffee.setEngName(engName));
+        Optional.ofNullable(coffee.getPrice()).ifPresent(price -> findCoffee.setPrice(price));
+        return coffeeRepository.save(findCoffee);
     }
 
     public Coffee findCoffee(long coffeeId) {
-        System.out.println("CoffeeService.findCoffee");
-        return new Coffee(coffeeId, "아메리카노", "Americano", 2500);
+        return findVerifiedCoffee(coffeeId);
     }
 
     public List<Coffee> findCoffees() {
-        System.out.println("CoffeeService.findCoffees");
-        return List.of(
-                new Coffee(1L, "아메리카노", "Americano", 2500),
-                new Coffee(2L, "카라멜 라뗴", "Caramel Latte", 5000)
-
-        );
+        return (List<Coffee>) coffeeRepository.findAll();
     }
+
+    public List<Coffee> findOrderedCoffees(Order order) {
+        return order.getOrderCoffees().stream()
+                .map(coffeeRef -> findVerifiedCoffee(coffeeRef.getCoffeeId())).collect(Collectors.toList());
+    }
+
     public void deleteCoffee(long coffeeId) {
-        System.out.println("CoffeeService.deleteCoffee");
+        Coffee findCoffee = findVerifiedCoffee(coffeeId);
+        coffeeRepository.delete(findCoffee);
+    }
+
+    public Coffee findVerifiedCoffee(long coffeeId) {
+        Optional<Coffee> optionalCoffee = coffeeRepository.findById(coffeeId);
+        Coffee findCoffee = optionalCoffee.orElseThrow(() -> new BusinessLogicException(ExceptionCode.COFFEE_NOT_FOUND));
+        return findCoffee;
+    }
+
+    private void verifyExistCoffee(String coffeeCode) {
+        Optional<Coffee> coffee = coffeeRepository.findByCoffeeCode(coffeeCode);
+        if (coffee.isPresent()) {
+            throw new BusinessLogicException(ExceptionCode.COFFEE_CODE_EXISTS);
+        }
     }
 }
